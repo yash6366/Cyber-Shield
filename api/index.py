@@ -1,9 +1,14 @@
 from http.server import BaseHTTPRequestHandler
 import json
 import os
-from hunter_agent import HunterAgent
-from classifier_agent import ClassifierAgent
-from response_agent import ResponseAgent
+import sys
+
+# Add python_agents directory to Python path
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+
+from python_agents.hunter_agent import HunterAgent
+from python_agents.classifier_agent import ClassifierAgent
+from python_agents.response_agent import ResponseAgent
 
 # Initialize agents (only once, outside the handler)
 hunter_agent = HunterAgent()
