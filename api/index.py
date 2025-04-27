@@ -20,6 +20,13 @@ def validate_api_key(headers):
     expected_key = os.environ.get('API_KEY')
     return api_key == expected_key
 
+def get_clean_path(path):
+    """Remove /api prefix and trailing slashes from path"""
+    path = path.rstrip('/')
+    if path.startswith('/api/'):
+        path = path[4:]  # Remove /api prefix
+    return path
+
 class handler(BaseHTTPRequestHandler):
     def setup_response(self, status_code, content):
         self.send_response(status_code)
@@ -38,7 +45,8 @@ class handler(BaseHTTPRequestHandler):
             self.setup_response(401, {"error": "Invalid API key"})
             return
 
-        if self.path == '/api/health':
+        clean_path = get_clean_path(self.path)
+        if clean_path == 'health':
             content = {
                 "status": "healthy",
                 "agents": {
@@ -62,7 +70,9 @@ class handler(BaseHTTPRequestHandler):
         data = json.loads(post_data)
 
         try:
-            if self.path == '/api/hunter/detect':
+            clean_path = get_clean_path(self.path)
+            
+            if clean_path == 'hunter/detect':
                 features = data.get('features')
                 if not features:
                     self.setup_response(400, {"error": "Missing features"})
@@ -76,17 +86,17 @@ class handler(BaseHTTPRequestHandler):
                 self.setup_response(200, response)
                 return
 
-            elif self.path == '/api/classifier/classify':
+            elif clean_path == 'classifier/classify':
                 threat_description = data.get('threat_description')
                 if not threat_description:
                     self.setup_response(400, {"error": "Missing threat description"})
                     return
                     
-                label = classifier_agent.classify(threat_description)
-                self.setup_response(200, {"label": label})
+                result = classifier_agent.classify(threat_description)
+                self.setup_response(200, result)
                 return
 
-            elif self.path == '/api/response/execute':
+            elif clean_path == 'response/execute':
                 action = data.get('action')
                 if not action:
                     self.setup_response(400, {"error": "Missing action"})
