@@ -1,0 +1,49 @@
+{
+  "simulation": {
+    "networks": ["192.168.1.0/24", "10.0.0.0/24"],
+    "servers": 5,
+    "clients": 10,
+    "firewalls": 2,
+    "simulation_speed": 2.0
+  },
+  "attack_injection": {
+    "attack_frequency": 3.0,
+    "attack_types": [
+      "port_scan", 
+      "brute_force", 
+      "data_exfiltration", 
+      "malware_communication", 
+      "lateral_movement"
+    ],
+    "attack_duration": 10.0,
+    "attack_intensity": 0.6
+  },
+  "data_collection": {
+    "collection_interval": 5.0,
+    "max_buffer_size": 10000,
+    "data_directory": "data",
+    "feature_extraction": true
+  },
+  "hunter_agent": {
+    "detection_threshold": 0.7,
+    "model_path": "models/threat_detection_model.pt",
+    "data_sources": ["network_traffic", "system_logs"]
+  },
+  "classifier_agent": {
+    "llm_model": "threat-classifier-llm",
+    "vector_db_path": "data/vector_db",
+    "classification_types": ["attack_type", "severity", "tactics", "techniques"]
+  },
+  "response_agent": {
+    "response_policies": "config/response_policies.json",
+    "simulation_mode": true,
+    "max_severity_auto_response": "High",
+    "response_timeout": 60
+  },
+  "system": {
+    "processing_interval": 2.0,
+    "max_concurrent_threats": 10,
+    "save_results": true,
+    "results_directory": "logs"
+  }
+}

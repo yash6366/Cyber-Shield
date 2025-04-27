@@ -1,0 +1,73 @@
+{
+  "attack_types": {
+    "Brute Force Authentication Attempt": {
+      "actions": [
+        {"type": "block_ip", "target": "source_ip", "duration": 3600},
+        {"type": "enable_mfa", "target": "affected_user"},
+        {"type": "alert", "severity": "Medium", "message": "Brute force attempt detected"}
+      ],
+      "severity_override": {
+        "Critical": [
+          {"type": "isolate_host", "target": "source_host"},
+          {"type": "create_ticket", "priority": "High", "team": "security"}
+        ]
+      }
+    },
+    "SSL/TLS Inspection Bypass": {
+      "actions": [
+        {"type": "block_ip", "target": "destination_ip", "duration": 86400},
+        {"type": "block_traffic", "protocol": "TCP", "port": 443, "direction": "outbound"},
+        {"type": "scan_host", "target": "source_host", "scan_type": "malware"},
+        {"type": "alert", "severity": "High", "message": "Potential C2 channel detected"}
+      ]
+    },
+    "Suspicious Network Activity": {
+      "actions": [
+        {"type": "monitor_ip", "target": "source_ip", "duration": 86400},
+        {"type": "alert", "severity": "Low", "message": "Suspicious network activity detected"}
+      ]
+    },
+    "Port Scan": {
+      "actions": [
+        {"type": "block_ip", "target": "source_ip", "duration": 3600},
+        {"type": "alert", "severity": "Medium", "message": "Port scan detected"}
+      ]
+    },
+    "Data Exfiltration": {
+      "actions": [
+        {"type": "block_ip", "target": "destination_ip", "duration": 86400},
+        {"type": "isolate_host", "target": "source_host"},
+        {"type": "alert", "severity": "High", "message": "Data exfiltration detected"},
+        {"type": "create_ticket", "priority": "High", "team": "security"}
+      ]
+    },
+    "Malware Communication": {
+      "actions": [
+        {"type": "block_ip", "target": "destination_ip", "duration": 86400},
+        {"type": "scan_host", "target": "source_host", "scan_type": "malware"},
+        {"type": "alert", "severity": "High", "message": "Malware communication detected"},
+        {"type": "create_ticket", "priority": "High", "team": "security"}
+      ]
+    },
+    "Lateral Movement": {
+      "actions": [
+        {"type": "isolate_host", "target": "source_host"},
+        {"type": "scan_host", "target": "source_host", "scan_type": "malware"},
+        {"type": "alert", "severity": "High", "message": "Lateral movement detected"},
+        {"type": "create_ticket", "priority": "High", "team": "security"}
+      ]
+    }
+  },
+  "default": {
+    "actions": [
+      {"type": "alert", "severity": "Medium", "message": "Unknown threat detected"},
+      {"type": "create_ticket", "priority": "Medium", "team": "security"}
+    ]
+  },
+  "severity_thresholds": {
+    "Low": ["alert", "monitor_ip"],
+    "Medium": ["alert", "monitor_ip", "create_ticket", "block_ip"],
+    "High": ["alert", "monitor_ip", "create_ticket", "block_ip", "block_traffic", "scan_host"],
+    "Critical": ["alert", "monitor_ip", "create_ticket", "block_ip", "block_traffic", "scan_host", "isolate_host"]
+  }
+}

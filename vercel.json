@@ -1,0 +1,51 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "frontend/package.json",
+      "use": "@vercel/static-build",
+      "config": { 
+        "distDir": "build",
+        "maxLambdaSize": "15mb"
+      }
+    },
+    {
+      "src": "api/*.py",
+      "use": "@vercel/python",
+      "config": {
+        "maxLambdaSize": "15mb"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/$1",
+      "headers": {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type"
+      }
+    },
+    {
+      "src": "^/static/(.*)",
+      "dest": "/frontend/static/$1"
+    },
+    {
+      "src": "^/favicon.ico",
+      "dest": "/frontend/favicon.ico"
+    },
+    {
+      "src": "^/manifest.json",
+      "dest": "/frontend/manifest.json"
+    },
+    {
+      "src": "^/(.*).(js|css|png|jpg|gif|svg|ico)$",
+      "dest": "/frontend/$1.$2"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/frontend/index.html"
+    }
+  ]
+}

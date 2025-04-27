@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  cyber_defense_system:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"  # Python API
+      - "3000:3000"  # React frontend
+    volumes:
+      - ./:/app
+      - /app/node_modules
+      - /app/frontend/node_modules
+    environment:
+      - NODE_ENV=development
+      - FLASK_ENV=development
+      - FLASK_APP=python_agents/api_server.py
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
