@@ -1,21 +1,19 @@
 from http.server import BaseHTTPRequestHandler
+import json
+import os
 from hunter_agent import HunterAgent
 from classifier_agent import ClassifierAgent
 from response_agent import ResponseAgent
-import json
-import torch
-from flask import Flask, jsonify
-from flask_cors import CORS
-import os
 
-# Initialize Flask for local development
-app = Flask(__name__)
-CORS(app)
-
-# Initialize agents
+# Initialize agents (only once, outside the handler)
 hunter_agent = HunterAgent()
 classifier_agent = ClassifierAgent()
 response_agent = ResponseAgent()
+
+def validate_api_key(headers):
+    api_key = headers.get('X-API-Key')
+    expected_key = os.environ.get('API_KEY')
+    return api_key == expected_key
 
 class handler(BaseHTTPRequestHandler):
     def setup_response(self, status_code, content):
@@ -23,7 +21,7 @@ class handler(BaseHTTPRequestHandler):
         self.send_header('Content-type', 'application/json')
         self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type, X-API-Key')
         self.end_headers()
         self.wfile.write(json.dumps(content).encode())
 
@@ -31,6 +29,10 @@ class handler(BaseHTTPRequestHandler):
         self.setup_response(200, {})
 
     def do_GET(self):
+        if not validate_api_key(self.headers):
+            self.setup_response(401, {"error": "Invalid API key"})
+            return
+
         if self.path == '/api/health':
             content = {
                 "status": "healthy",
@@ -42,33 +44,34 @@ class handler(BaseHTTPRequestHandler):
             }
             self.setup_response(200, content)
             return
+        
+        self.setup_response(404, {"error": "Not found"})
 
     def do_POST(self):
+        if not validate_api_key(self.headers):
+            self.setup_response(401, {"error": "Invalid API key"})
+            return
+
         content_length = int(self.headers['Content-Length'])
         post_data = self.rfile.read(content_length)
         data = json.loads(post_data)
 
-        if self.path == '/api/hunter/detect':
-            try:
+        try:
+            if self.path == '/api/hunter/detect':
                 features = data.get('features')
                 if not features:
                     self.setup_response(400, {"error": "Missing features"})
                     return
                     
-                input_tensor = torch.tensor([features], dtype=torch.float32)
-                threat_detected = hunter_agent.detect_threat(input_tensor)
-                
+                threat_detected = hunter_agent.detect_threat(features)
                 response = {
                     "threat_detected": threat_detected,
-                    "confidence": float(threat_detected.item()) if hasattr(threat_detected, 'item') else float(threat_detected)
+                    "confidence": float(threat_detected) if isinstance(threat_detected, (int, float)) else None
                 }
                 self.setup_response(200, response)
-            except Exception as e:
-                self.setup_response(500, {"error": str(e)})
-            return
+                return
 
-        elif self.path == '/api/classifier/classify':
-            try:
+            elif self.path == '/api/classifier/classify':
                 threat_description = data.get('threat_description')
                 if not threat_description:
                     self.setup_response(400, {"error": "Missing threat description"})
@@ -76,12 +79,9 @@ class handler(BaseHTTPRequestHandler):
                     
                 label = classifier_agent.classify(threat_description)
                 self.setup_response(200, {"label": label})
-            except Exception as e:
-                self.setup_response(500, {"error": str(e)})
-            return
+                return
 
-        elif self.path == '/api/response/execute':
-            try:
+            elif self.path == '/api/response/execute':
                 action = data.get('action')
                 if not action:
                     self.setup_response(400, {"error": "Missing action"})
@@ -89,11 +89,9 @@ class handler(BaseHTTPRequestHandler):
                     
                 success = response_agent.execute_response(action)
                 self.setup_response(200, {"success": success})
-            except Exception as e:
-                self.setup_response(500, {"error": str(e)})
-            return
+                return
+            
+            self.setup_response(404, {"error": "Not found"})
 
-# For local development
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
+        except Exception as e:
+            self.setup_response(500, {"error": str(e)})
